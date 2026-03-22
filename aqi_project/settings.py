@@ -42,12 +42,27 @@ TEMPLATES = [{
 
 WSGI_APPLICATION = 'aqi_project.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('VERCEL') == '1':
+    import shutil
+    tmp_db = '/tmp/db.sqlite3'
+    if not os.path.exists(tmp_db):
+        try:
+            shutil.copyfile(BASE_DIR / 'db.sqlite3', tmp_db)
+        except Exception:
+            pass
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': tmp_db,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
