@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}All Readings{% endblock %}
+{% block content %}
+<div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+  <div><h1>📋 All <span class="accent">Readings</span></h1><p>{{ readings|length }} total records in database</p></div>
+  <a href="/" class="btn btn-primary">+ New Prediction</a>
+</div>
+<div class="card">
+  {% if readings %}<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Location</th><th>PM2.5</th><th>PM10</th><th>CO</th><th>SO₂</th><th>NO₂</th><th>O₃</th><th>AQI</th><th>Category</th><th>Source</th><th>Date</th><th>Delete</th></tr></thead><tbody>
+  {% for r in readings %}<tr><td style="color:var(--muted);">{{ forloop.counter }}</td><td>{{ r.location_name }}</td><td>{{ r.pm25 }}</td><td>{{ r.pm10 }}</td><td>{{ r.co }}</td><td>{{ r.so2 }}</td><td>{{ r.no2 }}</td><td>{{ r.o3 }}</td><td style="font-family:'Rajdhani',sans-serif;font-weight:700;">{{ r.aqi_value }}</td><td><span class="badge badge-{{ r.badge_class }}">{{ r.predicted_category }}</span></td><td style="color:var(--muted);font-size:.78rem;">{{ r.source }}</td><td style="color:var(--muted);font-size:.78rem;white-space:nowrap;">{{ r.recorded_at|date:"d M Y H:i" }}</td><td><a href="/readings/delete/{{ r.pk }}/" onclick="return confirm('Delete?')" class="btn btn-danger btn-sm">Del</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<p style="color:var(--muted);padding:1rem 0;">No readings yet. <a href="/" style="color:var(--accent);">Make first prediction →</a></p>{% endif %}
+</div>
+{% endblock %}

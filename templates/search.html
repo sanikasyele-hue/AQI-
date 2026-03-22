@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Search History{% endblock %}
+{% block content %}
+<div class="ph"><h1>🔍 Search <span class="accent">History</span></h1><p>Browse and filter all past AQI readings ({{ total }} records)</p></div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <form method="GET" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="flex:1;min-width:180px;margin-bottom:0;"><label>Search Location</label><input type="text" name="q" value="{{ q }}" placeholder="e.g. Mumbai, Delhi..."></div>
+    <div class="form-group" style="min-width:150px;margin-bottom:0;"><label>Category</label><select name="cat"><option value="">All</option><option value="Good" {% if cat == 'Good' %}selected{% endif %}>Good</option><option value="Moderate" {% if cat == 'Moderate' %}selected{% endif %}>Moderate</option><option value="Poor" {% if cat == 'Poor' %}selected{% endif %}>Poor</option><option value="Very Poor" {% if cat == 'Very Poor' %}selected{% endif %}>Very Poor</option><option value="Severe" {% if cat == 'Severe' %}selected{% endif %}>Severe</option></select></div>
+    <div class="form-group" style="min-width:130px;margin-bottom:0;"><label>Source</label><select name="src"><option value="">All Sources</option><option value="manual" {% if src == 'manual' %}selected{% endif %}>Manual</option><option value="iot" {% if src == 'iot' %}selected{% endif %}>IoT Sensor</option><option value="api" {% if src == 'api' %}selected{% endif %}>API/Live</option></select></div>
+    <button type="submit" class="btn btn-primary" style="margin-bottom:0;">Search</button>
+    <a href="/search/" class="btn btn-outline" style="margin-bottom:0;">Clear</a>
+  </form>
+</div>
+<div class="card">
+  <div class="card-title">Results — {{ total }} records</div>
+  {% if readings %}<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Location</th><th>PM2.5</th><th>PM10</th><th>CO</th><th>SO₂</th><th>NO₂</th><th>O₃</th><th>AQI</th><th>Category</th><th>Source</th><th>Date</th></tr></thead><tbody>
+  {% for r in readings %}<tr><td style="color:var(--muted);">{{ forloop.counter }}</td><td>{{ r.location_name }}</td><td>{{ r.pm25 }}</td><td>{{ r.pm10 }}</td><td>{{ r.co }}</td><td>{{ r.so2 }}</td><td>{{ r.no2 }}</td><td>{{ r.o3 }}</td><td style="font-family:'Rajdhani',sans-serif;font-weight:700;">{{ r.aqi_value }}</td><td><span class="badge badge-{{ r.badge_class }}">{{ r.predicted_category }}</span></td><td style="color:var(--muted);font-size:.78rem;">{{ r.source }}</td><td style="color:var(--muted);font-size:.78rem;white-space:nowrap;">{{ r.recorded_at|date:"d M Y H:i" }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<p style="color:var(--muted);padding:1rem 0;">No records found. <a href="/" style="color:var(--accent);">Make a prediction →</a></p>{% endif %}
+</div>
+{% endblock %}

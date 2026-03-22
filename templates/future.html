@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Future AQI Forecast{% endblock %}
+{% block extra_css %}
+<style>
+.fc-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin:1.5rem 0;}
+@media(max-width:700px){.fc-cards{grid-template-columns:1fr;}}
+.fc{border-radius:14px;padding:1.5rem;text-align:center;border:2px solid;}
+.fc-good{background:rgba(34,197,94,.06);border-color:#22c55e;}
+.fc-moderate{background:rgba(245,158,11,.06);border-color:#f59e0b;}
+.fc-poor{background:rgba(249,115,22,.06);border-color:#f97316;}
+.fc-verypoor{background:rgba(239,68,68,.06);border-color:#ef4444;}
+.fc-severe{background:rgba(124,58,237,.06);border-color:#7c3aed;}
+.fc-num{font-family:'Rajdhani',sans-serif;font-size:3.5rem;font-weight:700;line-height:1;margin:.5rem 0;}
+.warn-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:1rem 1.25rem;color:#fca5a5;font-size:.875rem;margin-bottom:1.25rem;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="ph"><h1>🔮 Future AQI <span class="accent">Forecast</span></h1><p>Predict air quality for next 24 hours, 7 days, and 30 days using ML time-series model</p></div>
+
+{% if not model_ok %}
+<div class="warn-box">⚠️ <b>Model not loaded.</b> Run: <code style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:4px;">python ml_model/train_models.py</code> then restart.</div>
+{% endif %}
+
+<div class="card" style="max-width:580px;margin:0 auto 2rem;">
+  <div class="card-title">📍 Enter Current AQI</div>
+  <form method="POST">{% csrf_token %}
+    <div class="g2">
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" name="location" value="{% if result %}{{ result.loc }}{% endif %}" placeholder="e.g. Delhi, Mumbai" required>
+      </div>
+      <div class="form-group">
+        <label>Current AQI (0-500)</label>
+        <input type="number" name="current_aqi" min="0" max="500" value="{% if result %}{{ result.cur }}{% endif %}" placeholder="e.g. 85" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.875rem;" {% if not model_ok %}disabled{% endif %}>
+      🔮 Generate Forecast
+    </button>
+  </form>
+  <p style="margin-top:.85rem;font-size:.78rem;color:var(--muted);">Don't know AQI? <a href="/" style="color:var(--accent);">Calculate it here →</a></p>
+</div>
+
+{% if result %}
+<div style="text-align:center;margin-bottom:.5rem;">
+  <span style="font-size:.875rem;color:var(--muted2);">{{ result.loc }} · Current: </span>
+  <span style="font-family:'Rajdhani',sans-serif;font-size:1.3rem;font-weight:700;">{{ result.cur }}</span>
+  <span class="badge badge-{{ result.cur_badge }}" style="margin-left:.4rem;">{{ result.cur_cat }}</span>
+</div>
+
+<div class="fc-cards">
+  <div class="fc fc-{{ result.b24 }}">
+    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">⏰ Next 24 Hours</div>
+    <div class="fc-num" style="color:{% if result.b24 == 'good' %}#22c55e{% elif result.b24 == 'moderate' %}#f59e0b{% elif result.b24 == 'poor' %}#f97316{% elif result.b24 == 'verypoor' %}#ef4444{% else %}#7c3aed{% endif %}">{{ result.f24 }}</div>
+    <span class="badge badge-{{ result.b24 }}">{{ result.c24 }}</span>
+    <div style="font-size:.78rem;color:var(--muted2);margin-top:.5rem;">{{ result.a24 }}</div>
+  </div>
+  <div class="fc fc-{{ result.b7 }}">
+    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">📅 Next 7 Days</div>
+    <div class="fc-num" style="color:{% if result.b7 == 'good' %}#22c55e{% elif result.b7 == 'moderate' %}#f59e0b{% elif result.b7 == 'poor' %}#f97316{% elif result.b7 == 'verypoor' %}#ef4444{% else %}#7c3aed{% endif %}">{{ result.f7 }}</div>
+    <span class="badge badge-{{ result.b7 }}">{{ result.c7 }}</span>
+  </div>
+  <div class="fc fc-{{ result.b30 }}">
+    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">🗓️ Next 30 Days</div>
+    <div class="fc-num" style="color:{% if result.b30 == 'good' %}#22c55e{% elif result.b30 == 'moderate' %}#f59e0b{% elif result.b30 == 'poor' %}#f97316{% elif result.b30 == 'verypoor' %}#ef4444{% else %}#7c3aed{% endif %}">{{ result.f30 }}</div>
+    <span class="badge badge-{{ result.b30 }}">{{ result.c30 }}</span>
+  </div>
+</div>
+
+<div class="g2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <div class="card-title">⏰ 24-Hour Hourly Forecast</div>
+    <div style="height:220px"><canvas id="hourlyChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 7-Day Daily Forecast</div>
+    <div style="height:220px"><canvas id="dailyChart"></canvas></div>
+  </div>
+</div>
+{% endif %}
+
+{% if recent %}
+<div class="card">
+  <div class="card-title">🕐 Recent Forecasts</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Location</th><th>Current AQI</th><th>24h</th><th>7 Days</th><th>30 Days</th><th>Date</th></tr></thead>
+      <tbody>
+      {% for f in recent %}
+      <tr>
+        <td>{{ f.location_name }}</td>
+        <td style="font-family:'Rajdhani',sans-serif;font-weight:700;">{{ f.current_aqi }}</td>
+        <td><span class="badge badge-{% if f.category_24h == 'Good' %}good{% elif f.category_24h == 'Moderate' %}moderate{% elif f.category_24h == 'Poor' %}poor{% elif f.category_24h == 'Very Poor' %}verypoor{% else %}severe{% endif %}">{{ f.forecast_24h }} — {{ f.category_24h }}</span></td>
+        <td><span class="badge badge-{% if f.category_7d == 'Good' %}good{% elif f.category_7d == 'Moderate' %}moderate{% elif f.category_7d == 'Poor' %}poor{% elif f.category_7d == 'Very Poor' %}verypoor{% else %}severe{% endif %}">{{ f.forecast_7d }} — {{ f.category_7d }}</span></td>
+        <td><span class="badge badge-{% if f.category_30d == 'Good' %}good{% elif f.category_30d == 'Moderate' %}moderate{% elif f.category_30d == 'Poor' %}poor{% elif f.category_30d == 'Very Poor' %}verypoor{% else %}severe{% endif %}">{{ f.forecast_30d }} — {{ f.category_30d }}</span></td>
+        <td style="color:var(--muted);font-size:.78rem;">{{ f.created_at|date:"d M Y" }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block extra_js %}
+{% if result %}
+<script>
+const hd = {{ result.hourly_json|safe }};
+const dd = {{ result.daily_json|safe }};
+const clr = v => v<=50?'#22c55e':v<=100?'#f59e0b':v<=150?'#f97316':v<=200?'#ef4444':'#7c3aed';
+
+new Chart(document.getElementById('hourlyChart'), {
+  type: 'line',
+  data: {
+    labels: hd.map(x => x.h),
+    datasets: [{
+      data: hd.map(x => x.aqi),
+      borderColor: '#00d4ff',
+      backgroundColor: 'rgba(0,212,255,.08)',
+      fill: true, tension: .4,
+      pointBackgroundColor: hd.map(x => clr(x.aqi)),
+      pointRadius: 4, label: 'AQI'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color:'#64748b', font:{size:10} }, grid: { color:'rgba(30,45,69,.5)' } },
+      y: { ticks: { color:'#64748b' }, grid: { color:'rgba(30,45,69,.5)' }, min: 0 }
+    }
+  }
+});
+
+new Chart(document.getElementById('dailyChart'), {
+  type: 'bar',
+  data: {
+    labels: dd.map(x => x.d),
+    datasets: [{
+      data: dd.map(x => x.aqi),
+      backgroundColor: dd.map(x => clr(x.aqi)),
+      borderRadius: 6, label: 'AQI'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color:'#64748b', font:{size:10} }, grid: { color:'rgba(30,45,69,.5)' } },
+      y: { ticks: { color:'#64748b' }, grid: { color:'rgba(30,45,69,.5)' }, min: 0 }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

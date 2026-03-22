@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Manage Stations{% endblock %}
+{% block content %}
+<div class="ph"><h1>📡 Manage <span class="accent">Stations</span></h1><p>Add IoT monitoring stations — each gets a unique API key for sensor data</p></div>
+<div class="g2" style="align-items:start">
+<div class="card">
+  <div class="card-title">➕ Add New Station</div>
+  <form method="POST">{% csrf_token %}
+    <div class="form-group"><label>Station Name</label><input type="text" name="name" placeholder="e.g. Mumbai Central Station" required></div>
+    <div class="form-group"><label>Location / Address</label><input type="text" name="location" placeholder="e.g. Bandra, Mumbai" required></div>
+    <div class="form-group"><label>City</label><input type="text" name="city" placeholder="e.g. Mumbai"></div>
+    <div class="g2">
+      <div class="form-group"><label>Latitude (optional)</label><input type="number" name="latitude" step="0.000001" placeholder="19.0760"></div>
+      <div class="form-group"><label>Longitude (optional)</label><input type="number" name="longitude" step="0.000001" placeholder="72.8777"></div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Add Station</button>
+  </form>
+  <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+    <div class="card-title" style="margin-bottom:.5rem;">🔌 IoT API Endpoint</div>
+    <code style="background:var(--bg);padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border);display:block;font-size:.8rem;color:var(--accent);">POST http://127.0.0.1:8000/api/iot/</code>
+    <div style="margin-top:.75rem;font-size:.78rem;color:var(--muted);">Send JSON: pm25, pm10, co, so2, no2, o3, api_key</div>
+    <a href="/api/iot/" target="_blank" class="btn btn-outline btn-sm" style="margin-top:.75rem;">Test API →</a>
+  </div>
+</div>
+<div class="card">
+  <div class="card-title">📋 All Stations ({{ stations|length }})</div>
+  {% if stations %}<table><thead><tr><th>Name</th><th>Location</th><th>Status</th><th>API Key</th><th>Action</th></tr></thead><tbody>
+  {% for s in stations %}<tr><td><b>{{ s.name }}</b></td><td style="color:var(--muted2);">{{ s.location }}</td><td>{% if s.is_active %}<span class="badge badge-good">Active</span>{% else %}<span class="badge" style="background:rgba(100,116,139,.15);color:var(--muted);border:1px solid var(--muted);">Inactive</span>{% endif %}</td><td><code style="font-size:.72rem;background:var(--bg);padding:2px 6px;border-radius:4px;">{{ s.api_key|truncatechars:12 }}...</code></td><td><a href="/stations/delete/{{ s.pk }}/" onclick="return confirm('Delete?')" class="btn btn-danger btn-sm">Delete</a></td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p style="color:var(--muted);">No stations added yet.</p>{% endif %}
+</div></div>
+{% endblock %}

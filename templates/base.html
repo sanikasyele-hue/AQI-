@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}AQI System{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#080d18;--surface:#0f1623;--card:#141d2e;--border:#1e2d45;--accent:#00d4ff;--text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;--good:#22c55e;--mod:#f59e0b;--poor:#f97316;--vp:#ef4444;--sev:#7c3aed;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+nav{background:rgba(15,22,35,.97);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);}
+.brand{font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:700;color:var(--accent);text-decoration:none;letter-spacing:1px;}
+.brand span{color:#fff;}
+.nav-links{display:flex;gap:.25rem;align-items:center;flex-wrap:wrap;}
+.nav-links a{color:var(--muted2);text-decoration:none;padding:.45rem .85rem;border-radius:6px;font-size:.82rem;font-weight:500;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:var(--border);}
+.btn-login{background:var(--accent)!important;color:#000!important;font-weight:700!important;}
+.container{max-width:1280px;margin:0 auto;padding:1.5rem 2rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+.card-title{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:1rem;letter-spacing:.4px;}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.4rem;border-radius:8px;border:none;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0099bb);color:#000;}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px);}
+.btn-danger{background:var(--vp);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:.35rem .85rem;font-size:.78rem;}
+.form-group{margin-bottom:1rem;}
+label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.5px;}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.6rem .85rem;font-size:.875rem;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.08);}
+.badge{display:inline-block;padding:.22rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.badge-good{background:rgba(34,197,94,.12);color:var(--good);border:1px solid var(--good);}
+.badge-moderate{background:rgba(245,158,11,.12);color:var(--mod);border:1px solid var(--mod);}
+.badge-poor{background:rgba(249,115,22,.12);color:var(--poor);border:1px solid var(--poor);}
+.badge-verypoor{background:rgba(239,68,68,.12);color:var(--vp);border:1px solid var(--vp);}
+.badge-severe{background:rgba(124,58,237,.12);color:var(--sev);border:1px solid var(--sev);}
+table{width:100%;border-collapse:collapse;font-size:.85rem;}
+th{color:var(--muted);font-weight:500;text-align:left;padding:.7rem .85rem;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase;}
+td{padding:.7rem .85rem;border-bottom:1px solid rgba(30,45,69,.5);}
+tr:hover td{background:rgba(255,255,255,.015);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr;}.hm{display:none;}}
+.ph{padding:1.75rem 0 1.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.ph h1{font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;}
+.ph p{color:var(--muted2);font-size:.875rem;margin-top:.3rem;}
+.accent{color:var(--accent);}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center;}
+.stat-val{font-family:'Rajdhani',sans-serif;font-size:2.25rem;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:.75rem;color:var(--muted);margin-top:.25rem;}
+.msgs{list-style:none;margin-bottom:1rem;}
+.msgs li{padding:.7rem 1rem;border-radius:8px;margin-bottom:.4rem;font-size:.875rem;}
+.msgs .error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+.msgs .success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+canvas{max-width:100%;}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">AQI<span>Predict</span></a>
+  <div class="nav-links">
+    <a href="/" class="hm">🏠 Home</a>
+    <a href="/realtime/" class="hm">📡 Real-Time</a>
+    <a href="/future/" class="hm">🔮 Forecast</a>
+    {% if user.is_authenticated %}
+      <a href="/dashboard/" class="hm">📊 Dashboard</a>
+      <a href="/search/" class="hm">🔍 History</a>
+      <a href="/charts/" class="hm">📈 Charts</a>
+      <a href="/stations/" class="hm">📡 Stations</a>
+      <a href="/logout/" class="btn btn-outline btn-sm">Logout ({{ user.username }})</a>
+    {% else %}
+      <a href="/login/" class="btn btn-login btn-sm">🔐 Admin Login</a>
+    {% endif %}
+  </div>
+</nav>
+<div class="container">
+  {% if messages %}<ul class="msgs" style="margin-top:1rem">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
+  {% block content %}{% endblock %}
+</div>
+<footer style="text-align:center;padding:2rem;color:var(--muted);font-size:.8rem;border-top:1px solid var(--border);margin-top:3rem;">AQI Prediction System — Python &amp; Machine Learning Final Year Project</footer>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

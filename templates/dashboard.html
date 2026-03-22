@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+  <div><h1>📊 Admin <span class="accent">Dashboard</span></h1><p>Welcome {{ user.username }} — Overview of AQI monitoring system</p></div>
+  <a href="/" class="btn btn-primary">+ New Prediction</a>
+</div>
+<div class="g4" style="margin-bottom:1.5rem;">
+  <div class="stat"><div class="stat-val">{{ total }}</div><div class="stat-lbl">Total Readings</div></div>
+  <div class="stat"><div class="stat-val">{{ stations }}</div><div class="stat-lbl">Monitoring Stations</div></div>
+  <div class="stat"><div class="stat-val">{{ avg_aqi }}</div><div class="stat-lbl">Average AQI</div></div>
+  <div class="stat"><div class="stat-val" style="color:var(--vp);">{% if worst %}{{ worst.aqi_value }}{% else %}—{% endif %}</div><div class="stat-lbl">Worst AQI Recorded</div></div>
+</div>
+<div class="g2" style="margin-bottom:1.5rem;">
+  <div class="card"><div class="card-title">📊 AQI Trend (Last 30 Readings)</div><div style="height:220px"><canvas id="trendChart"></canvas></div></div>
+  <div class="card"><div class="card-title">🥧 Category Distribution</div><div style="height:220px;display:flex;align-items:center;justify-content:center"><canvas id="pieChart"></canvas></div></div>
+</div>
+<div class="g3" style="margin-bottom:1.5rem;">
+  {% for cat,cnt in cats.items %}
+  <div class="card" style="text-align:center;padding:1rem;">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;color:{% if cat == 'Good' %}var(--good){% elif cat == 'Moderate' %}var(--mod){% elif cat == 'Poor' %}var(--poor){% elif cat == 'Very Poor' %}var(--vp){% else %}var(--sev){% endif %}">{{ cnt }}</div>
+    <span class="badge badge-{% if cat == 'Good' %}good{% elif cat == 'Moderate' %}moderate{% elif cat == 'Poor' %}poor{% elif cat == 'Very Poor' %}verypoor{% else %}severe{% endif %}">{{ cat }}</span>
+  </div>
+  {% endfor %}
+</div>
+<div class="card">
+  <div class="card-title">🕐 Recent 10 Readings</div>
+  {% if recent %}<div style="overflow-x:auto"><table><thead><tr><th>Location</th><th>PM2.5</th><th>PM10</th><th>AQI</th><th>Category</th><th>Source</th><th>Date</th></tr></thead><tbody>
+  {% for r in recent %}<tr><td>{{ r.location_name }}</td><td>{{ r.pm25 }}</td><td>{{ r.pm10 }}</td><td style="font-family:'Rajdhani',sans-serif;font-weight:700;">{{ r.aqi_value }}</td><td><span class="badge badge-{{ r.badge_class }}">{{ r.predicted_category }}</span></td><td style="color:var(--muted);font-size:.78rem;">{{ r.source }}</td><td style="color:var(--muted);font-size:.78rem;">{{ r.recorded_at|date:"d M Y H:i" }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p style="color:var(--muted);">No readings yet.</p>{% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const tl={{ trend_labels|safe }},tv={{ trend_values|safe }},tc={{ trend_colors|safe }};
+new Chart(document.getElementById('trendChart'),{type:'bar',data:{labels:tl,datasets:[{data:tv,backgroundColor:tc,borderRadius:4,label:'AQI'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{size:9}},grid:{color:'rgba(30,45,69,.5)'}},y:{ticks:{color:'#64748b'},grid:{color:'rgba(30,45,69,.5)'},min:0}}}});
+const cl={{ cat_labels|safe }},cv={{ cat_values|safe }};
+new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:cl,datasets:[{data:cv,backgroundColor:['#22c55e','#f59e0b','#f97316','#ef4444','#7c3aed'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:12}}}}});
+</script>
+{% endblock %}

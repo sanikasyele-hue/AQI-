@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Charts & Visualisations{% endblock %}
+{% block content %}
+<div class="ph"><h1>📈 Charts &amp; <span class="accent">Visualisations</span></h1><p>Interactive charts based on {{ total }} AQI readings</p></div>
+<div class="g2" style="margin-bottom:1.5rem;">
+  <div class="card"><div class="card-title">🥧 AQI Category Distribution</div><div style="height:260px;display:flex;align-items:center;justify-content:center"><canvas id="pieChart"></canvas></div></div>
+  <div class="card"><div class="card-title">📅 Daily Average AQI Trend</div><div style="height:260px"><canvas id="dailyChart"></canvas></div></div>
+</div>
+<div class="g2" style="margin-bottom:1.5rem;">
+  <div class="card"><div class="card-title">🔵 PM2.5 vs AQI Scatter Plot</div><div style="height:260px"><canvas id="scatterChart"></canvas></div></div>
+  <div class="card"><div class="card-title">📊 Average Pollutant Levels</div><div style="height:260px"><canvas id="pollChart"></canvas></div></div>
+</div>
+<div class="g4">
+  <div class="stat"><div class="stat-val" style="font-size:1.5rem;">{{ avgs.pm25|floatformat:1 }}</div><div class="stat-lbl">Avg PM2.5 µg/m³</div></div>
+  <div class="stat"><div class="stat-val" style="font-size:1.5rem;">{{ avgs.pm10|floatformat:1 }}</div><div class="stat-lbl">Avg PM10 µg/m³</div></div>
+  <div class="stat"><div class="stat-val" style="font-size:1.5rem;">{{ avgs.no2|floatformat:1 }}</div><div class="stat-lbl">Avg NO₂ µg/m³</div></div>
+  <div class="stat"><div class="stat-val" style="font-size:1.5rem;">{{ avgs.o3|floatformat:1 }}</div><div class="stat-lbl">Avg O₃ µg/m³</div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const cl={{ cat_labels|safe }},cv={{ cat_values|safe }};
+new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:cl,datasets:[{data:cv,backgroundColor:['#22c55e','#f59e0b','#f97316','#ef4444','#7c3aed'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:12}}}}});
+const dl={{ daily_labels|safe }},dv={{ daily_vals|safe }};
+const dcolors=dv.map(v=>v<=50?'#22c55e':v<=100?'#f59e0b':v<=150?'#f97316':v<=200?'#ef4444':'#7c3aed');
+new Chart(document.getElementById('dailyChart'),{type:'line',data:{labels:dl,datasets:[{data:dv,borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.08)',fill:true,tension:.4,pointBackgroundColor:dcolors,pointRadius:5,label:'Avg AQI'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'rgba(30,45,69,.5)'}},y:{ticks:{color:'#64748b'},grid:{color:'rgba(30,45,69,.5)'},min:0}}}});
+const sd={{ scatter_data|safe }};
+const catColor={'Good':'#22c55e','Moderate':'#f59e0b','Poor':'#f97316','Very Poor':'#ef4444','Severe':'#7c3aed'};
+new Chart(document.getElementById('scatterChart'),{type:'scatter',data:{datasets:[{data:sd.map(p=>({x:p.x,y:p.y})),backgroundColor:sd.map(p=>catColor[p.cat]||'#64748b'),pointRadius:5,label:'Readings'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`PM2.5: ${ctx.raw.x} | AQI: ${ctx.raw.y}`}}},scales:{x:{title:{display:true,text:'PM2.5 (µg/m³)',color:'#64748b'},ticks:{color:'#64748b'},grid:{color:'rgba(30,45,69,.5)'}},y:{title:{display:true,text:'AQI Value',color:'#64748b'},ticks:{color:'#64748b'},grid:{color:'rgba(30,45,69,.5)'}}}}});
+new Chart(document.getElementById('pollChart'),{type:'radar',data:{labels:['PM2.5','PM10','CO×10','SO₂÷5','NO₂÷2','O₃÷2'],datasets:[{data:[{{ avgs.pm25|floatformat:1|default:0 }},{{ avgs.pm10|floatformat:1|default:0 }},({{ avgs.co|floatformat:2|default:0 }})*10,({{ avgs.so2|floatformat:1|default:0 }})/5,({{ avgs.no2|floatformat:1|default:0 }})/2,({{ avgs.o3|floatformat:1|default:0 }})/2],borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.1)',pointBackgroundColor:'#00d4ff',label:'Avg Levels'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{r:{ticks:{color:'#64748b',backdropColor:'transparent'},grid:{color:'rgba(30,45,69,.8)'},pointLabels:{color:'#94a3b8'}}}}});
+</script>
+{% endblock %}

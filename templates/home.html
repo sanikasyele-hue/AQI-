@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}AQI Prediction — Home{% endblock %}
+{% block extra_css %}
+<style>
+.hero{text-align:center;padding:2.5rem 0 2rem;}
+.hero h1{font-family:'Rajdhani',sans-serif;font-size:3rem;font-weight:700;line-height:1.1;}
+.hero p{color:var(--muted2);margin-top:.75rem;}
+.poll-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:1.25rem;}
+@media(max-width:600px){.poll-grid{grid-template-columns:1fr 1fr;}}
+.hint{font-size:.68rem;color:var(--muted);margin-top:.25rem;}
+.result-box{border-radius:16px;padding:2rem;text-align:center;border:2px solid;margin-bottom:1.5rem;animation:fadeUp .4s ease;}
+.result-good{background:rgba(34,197,94,.06);border-color:var(--good);}
+.result-moderate{background:rgba(245,158,11,.06);border-color:var(--mod);}
+.result-poor{background:rgba(249,115,22,.06);border-color:var(--poor);}
+.result-verypoor{background:rgba(239,68,68,.06);border-color:var(--vp);}
+.result-severe{background:rgba(124,58,237,.06);border-color:var(--sev);}
+.r-num{font-family:'Rajdhani',sans-serif;font-size:5rem;font-weight:700;line-height:1;}
+.warn-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;color:#fca5a5;font-size:.875rem;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Air Quality <span class="accent">Prediction</span></h1>
+  <p>Enter pollutant values to get instant AQI prediction using Machine Learning</p>
+  <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+    <a href="/realtime/" class="btn btn-outline">📡 Live Real-Time AQI</a>
+    <a href="/future/" class="btn btn-outline">🔮 Future Forecast</a>
+  </div>
+</div>
+{% if not model_ok %}<div class="warn-box">⚠️ <b>ML Model not loaded.</b> Run <code style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:4px;">python ml_model/train_models.py</code> then restart server.</div>{% endif %}
+<div class="g2" style="align-items:start">
+<div class="card">
+  <div class="card-title">🔬 Enter Pollutant Values</div>
+  <form method="POST">{% csrf_token %}
+    <div class="form-group"><label>📍 Location Name</label><input type="text" name="location" value="{{ fdata.location|default:'' }}" placeholder="e.g. Mumbai - Andheri" required></div>
+    <div class="poll-grid">
+      <div class="form-group"><label>PM2.5</label><input type="number" name="pm25" step="0.1" min="0" value="{{ fdata.pm25|default:'' }}" placeholder="e.g. 45" required><div class="hint">µg/m³ Fine particles</div></div>
+      <div class="form-group"><label>PM10</label><input type="number" name="pm10" step="0.1" min="0" value="{{ fdata.pm10|default:'' }}" placeholder="e.g. 80" required><div class="hint">µg/m³ Coarse particles</div></div>
+      <div class="form-group"><label>CO</label><input type="number" name="co" step="0.01" min="0" value="{{ fdata.co|default:'' }}" placeholder="e.g. 1.5" required><div class="hint">mg/m³ Carbon Monoxide</div></div>
+      <div class="form-group"><label>SO₂</label><input type="number" name="so2" step="0.1" min="0" value="{{ fdata.so2|default:'' }}" placeholder="e.g. 30" required><div class="hint">µg/m³ Sulphur Dioxide</div></div>
+      <div class="form-group"><label>NO₂</label><input type="number" name="no2" step="0.1" min="0" value="{{ fdata.no2|default:'' }}" placeholder="e.g. 50" required><div class="hint">µg/m³ Nitrogen Dioxide</div></div>
+      <div class="form-group"><label>O₃</label><input type="number" name="o3" step="0.1" min="0" value="{{ fdata.o3|default:'' }}" placeholder="e.g. 60" required><div class="hint">µg/m³ Ozone</div></div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.875rem;" {% if not model_ok %}disabled{% endif %}>🤖 Predict AQI Now</button>
+  </form>
+  <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:.6rem;text-transform:uppercase;">AQI Scale</div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+      <span class="badge badge-good">Good 0-50</span><span class="badge badge-moderate">Moderate 51-100</span><span class="badge badge-poor">Poor 101-150</span><span class="badge badge-verypoor">Very Poor 151-200</span><span class="badge badge-severe">Severe 200+</span>
+    </div>
+  </div>
+</div>
+<div>
+{% if result %}
+<div class="result-box result-{{ result.badge }}">
+  <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Prediction — {{ result.loc }}</div>
+  <div class="r-num" style="color:{% if result.badge == 'good' %}var(--good){% elif result.badge == 'moderate' %}var(--mod){% elif result.badge == 'poor' %}var(--poor){% elif result.badge == 'verypoor' %}var(--vp){% else %}var(--sev){% endif %}">{{ result.val }}</div>
+  <div style="margin:.5rem 0"><span class="badge badge-{{ result.badge }}">{{ result.cat }}</span></div>
+  <div style="color:var(--muted2);font-size:.875rem;">{{ result.advice }}</div>
+  <div style="margin-top:1rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+    <a href="/future/" class="btn btn-outline btn-sm">🔮 Forecast Future</a>
+    {% if user.is_authenticated %}<a href="/charts/" class="btn btn-outline btn-sm">📈 View Charts</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+<div class="card">
+  <div class="card-title">🕐 Recent Readings</div>
+  {% if recent %}<table><thead><tr><th>Location</th><th>AQI</th><th>Category</th><th>Date</th></tr></thead><tbody>
+  {% for r in recent %}<tr><td>{{ r.location_name|truncatechars:18 }}</td><td style="font-family:'Rajdhani',sans-serif;font-weight:700;">{{ r.aqi_value }}</td><td><span class="badge badge-{{ r.badge_class }}">{{ r.predicted_category }}</span></td><td style="color:var(--muted);font-size:.78rem;">{{ r.recorded_at|date:"d M H:i" }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if user.is_authenticated %}<a href="/search/" style="display:inline-block;margin-top:.85rem;font-size:.8rem;color:var(--accent);text-decoration:none;">View full history →</a>
+  {% else %}<p style="margin-top:.85rem;font-size:.8rem;color:var(--muted);"><a href="/login/" style="color:var(--accent);">Login</a> to view full search history &amp; analytics</p>{% endif %}
+  {% else %}<p style="color:var(--muted);font-size:.875rem;">No readings yet. Submit your first prediction!</p>{% endif %}
+</div>
+</div></div>
+{% endblock %}

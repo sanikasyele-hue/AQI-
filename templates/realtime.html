@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Real-Time AQI{% endblock %}
+{% block extra_css %}
+<style>
+.city-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+.city-tab{padding:.4rem 1rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted2);text-decoration:none;font-size:.82rem;font-weight:500;transition:all .2s;}
+.city-tab:hover{border-color:var(--accent);color:var(--accent);}
+.city-tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+.live-dot{width:10px;height:10px;border-radius:50%;background:var(--good);display:inline-block;margin-right:.4rem;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.big-aqi{font-family:'Rajdhani',sans-serif;font-size:6rem;font-weight:700;line-height:1;}
+.poll-pill{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.5rem .85rem;text-align:center;}
+.poll-pill .pv{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;color:var(--accent);}
+.poll-pill .pl{font-size:.65rem;color:var(--muted);}
+.demo-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:.75rem 1rem;color:#fde68a;font-size:.82rem;margin-bottom:1rem;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="ph"><h1>📡 Real-Time <span class="accent">AQI Monitor</span></h1><p>Live air quality data from Open-Meteo API — no API key needed</p></div>
+<div class="city-tabs">
+{% for c in cities %}<a href="/realtime/?city={{ c.name }}" class="city-tab {% if c.name == sel %}active{% endif %}">{{ c.name }}</a>{% endfor %}
+<a href="/realtime/?city={{ sel }}" style="padding:.4rem 1rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted2);text-decoration:none;font-size:.82rem;">🔄 Refresh</a>
+</div>
+{% if error %}<div class="demo-warn">⚠️ {{ error }}</div>{% endif %}
+{% if data %}
+<div class="g2" style="align-items:start;margin-bottom:1.5rem;">
+<div class="card">
+  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;"><span class="live-dot"></span><span style="font-size:.82rem;color:var(--muted2);">{{ data.fetched }}</span>{% if data.is_demo %}<span class="badge badge-moderate">DEMO</span>{% else %}<span class="badge badge-good">LIVE</span>{% endif %}</div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:1.1rem;color:var(--muted2);">{{ data.city }}</div>
+  <div class="big-aqi" style="color:{% if data.badge == 'good' %}var(--good){% elif data.badge == 'moderate' %}var(--mod){% elif data.badge == 'poor' %}var(--poor){% elif data.badge == 'verypoor' %}var(--vp){% else %}var(--sev){% endif %}">{{ data.aqi }}</div>
+  <div style="margin:.75rem 0"><span class="badge badge-{{ data.badge }}" style="font-size:.875rem;padding:.3rem .9rem;">{{ data.cat }}</span></div>
+  <p style="color:var(--muted2);font-size:.875rem;margin-bottom:1rem;">{{ data.advice }}</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;">
+    <div class="poll-pill"><div class="pv">{{ data.pm25 }}</div><div class="pl">PM2.5</div></div>
+    <div class="poll-pill"><div class="pv">{{ data.pm10 }}</div><div class="pl">PM10</div></div>
+    <div class="poll-pill"><div class="pv">{{ data.co }}</div><div class="pl">CO</div></div>
+    <div class="poll-pill"><div class="pv">{{ data.so2 }}</div><div class="pl">SO₂</div></div>
+    <div class="poll-pill"><div class="pv">{{ data.no2 }}</div><div class="pl">NO₂</div></div>
+    <div class="poll-pill"><div class="pv">{{ data.o3 }}</div><div class="pl">O₃</div></div>
+  </div>
+  <div style="margin-top:1rem;"><a href="/future/?aqi={{ data.aqi }}&loc={{ data.city }}" class="btn btn-primary btn-sm">🔮 Forecast Future AQI</a></div>
+</div>
+<div class="card"><div class="card-title">📊 Today's Hourly Trend</div><div style="height:240px"><canvas id="trendChart"></canvas></div>
+<div style="margin-top:1rem;font-size:.78rem;color:var(--muted);">🟢 Good &lt;50 · 🟡 Moderate 51-100 · 🟠 Poor 101-150 · 🔴 Very Poor 151-200 · 🟣 Severe 200+</div>
+</div>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-title">🌡️ AQI Gauge</div>
+  <div style="height:28px;background:linear-gradient(to right,#22c55e,#f59e0b,#f97316,#ef4444,#7c3aed);border-radius:14px;position:relative;">
+    <div style="position:absolute;top:0;left:{% widthratio data.aqi 500 100 %}%;transform:translateX(-50%);width:4px;height:100%;background:#fff;border-radius:2px;"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:.4rem;"><span>0</span><span>50</span><span>100</span><span>150</span><span>200</span><span>300+</span></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if data %}
+<script>
+const raw={{ data.trend_json|safe }};
+const labels=raw.map(x=>x.t),vals=raw.map(x=>x.aqi);
+const colors=vals.map(v=>v<=50?'#22c55e':v<=100?'#f59e0b':v<=150?'#f97316':v<=200?'#ef4444':'#7c3aed');
+new Chart(document.getElementById('trendChart'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:4,label:'AQI'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'rgba(30,45,69,.5)'}},y:{ticks:{color:'#64748b'},grid:{color:'rgba(30,45,69,.5)'},min:0}}}});
+</script>
+{% endif %}
+{% endblock %}
